@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>PAX · Codificador de roles</title>
+    <meta name="description" content="Convierte tus horarios Excel con el glosario PAX.">
+    <link rel="stylesheet" href="style.css">
+    <script>try { document.documentElement.dataset.theme = localStorage.getItem("pax-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") } catch { }</script>
+</head>
+
+<body>
+    <header><a class="brand" href="./"><span class="talma-logo" role="img" aria-label="Talma"></span><span
+                class="brand-divider"></span><span class="brand-product">PAX <small>Codificador de
+                    roles</small></span></a>
+        <div class="header-tools"><span class="privacy">Procesamiento local</span><button id="theme-toggle"
+                class="small-button" type="button" aria-pressed="false">Modo oscuro</button></div>
+    </header>
+    <main>
+        <div class="intro airport-hero">
+            <div>
+                <p class="eyebrow">OPERACIONES AEROPORTUARIAS ROSTERING / PAX</p>
+                <h1>Cada turno.<br>Listo para despegar.</h1>
+                <p class="lead">Sube un archivo base y genera el rol codificado y el grupo de tu aerolínea.</p>
+            </div><button id="reset" class="text-button">Empezar de nuevo</button>
+        </div>
+        <div class="flight-board"><span class="flight-icon" aria-hidden="true">✈</span>
+            <div><small>OPERACIÓN SELECCIONADA</small><strong id="operation-name">Aerolíneas Argentinas</strong></div>
+            <span class="board-code" id="operation-code">AR</span>
+        </div>
+        <section class="airline-section" aria-labelledby="airline-heading">
+            <div class="section-title">
+                <h2 id="airline-heading">Aerolínea</h2>
+                <div class="airline-actions"><button id="configure-group" class="small-button" disabled>Configurar
+                        grupo</button><button id="add-airline" class="small-button" disabled>Añadir aerolínea</button>
+                </div>
+            </div>
+            <nav id="airlines" aria-label="Apartados por aerolínea"></nav>
+            <form id="airline-form" hidden><label for="airline-name">Nombre de la aerolínea</label>
+                <div class="airline-form-controls"><input id="airline-name" maxlength="60" required
+                        autocomplete="off"><button class="small-button" type="submit">Crear apartado</button><button
+                        id="cancel-airline" class="text-button" type="button">Cancelar</button></div>
+            </form>
+            <form id="group-form" hidden>
+                <h3>Grupo de la aerolínea</h3>
+                <div class="group-fields"><label>Número de grupo<input id="group-number" inputmode="numeric"
+                            pattern="[0-9]{1,15}" maxlength="15" required></label><label>Área<input id="group-area"
+                            maxlength="150" required></label><label>Líder<select id="group-leader">
+                            <option>NO</option>
+                        </select></label></div><button class="small-button" type="submit">Guardar grupo</button><button
+                    id="cancel-group" class="text-button" type="button">Cancelar</button>
+            </form>
+            <p id="airline-description" class="muted">Cargando configuración…</p>
+        </section>
+        <div class="period-controls"><label>Mes<select id="month">
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select></label><label>Año<input id="year" type="number" min="2000" max="2100" value="2026"></label>
+            <p>Las fechas del archivo deben coincidir con el período seleccionado.</p>
+        </div>
+        <div class="workspace">
+            <section class="card">
+                <div class="section-title">
+                    <h2>Archivo del rol</h2><span class="tag">.xlsx</span>
+                </div><label id="drop" class="drop"><input id="role" type="file" accept=".xlsx"><span class="file-icon"
+                        aria-hidden="true">▤</span><strong id="filename">Arrastra tu Excel aquí</strong><span>o haz clic
+                        para seleccionarlo</span><small>Máximo 20 MB · todas las hojas del rol</small></label>
+                <div class="glossary">
+                    <div><strong id="glossary-title">Glosario PAX</strong>
+                        <p id="glossary-label">Cargando equivalencias…</p>
+                    </div><label class="small-button">Cambiar glosario<input id="glossary" type="file" accept=".xlsx"
+                            hidden></label>
+                </div><button id="convert" class="primary full" disabled>Codificar archivo</button>
+                <p id="message" role="status" aria-live="polite">Selecciona tu rol para comenzar.</p>
+            </section>
+            <aside class="card">
+                <div class="section-title">
+                    <h2>Equivalencias especiales</h2><span class="tag green">Activas</span>
+                </div>
+                <p class="muted">Aplicadas junto al glosario PAX.</p>
+                <div class="rule"><span>Curso CG</span><code>CAPA</code></div>
+                <div class="rule"><span>Suspensión</span><code>DSUS</code></div>
+                <div class="rule"><span>Falta</span><code>F</code></div>
+                <div class="rule"><span>Descanso</span><code>DESD</code></div>
+                <div class="rule"><span>DM / D/M</span><code>DDMS</code></div>
+                <p class="note">Los valores sin equivalencia quedan disponibles para tu revisión.</p>
+                <div class="output-status">
+                    <h3>Archivos de salida</h3>
+                    <p>Rol codificado <span>Disponible</span></p>
+                    <p>Grupo de la aerolínea <span id="group-status">Selecciona una aerolínea</span></p>
+                </div>
+            </aside>
+        </div>
+        <section id="results" hidden>
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">RESULTADO</p>
+                    <h2>Revisa tu codificación</h2>
+                </div>
+                <div class="download-actions"><button id="download-both" class="primary">Descargar ambos
+                        (ZIP)</button><button id="download" class="small-button">Rol codificado</button><button
+                        id="download-group" class="small-button">Grupo</button></div>
+            </div>
+            <div class="stats">
+                <div><strong id="converted">0</strong>
+                    <p>Celdas convertidas</p>
+                </div>
+                <div><strong id="pending-count">0</strong>
+                    <p>Celdas por revisar</p>
+                </div>
+                <div><strong id="sheets-count">0</strong>
+                    <p>Hojas procesadas</p>
+                </div>
+            </div>
+            <div id="pending" class="card pending-card" hidden>
+                <h3>Valores por revisar</h3>
+                <p class="muted">Asigna un código si lo conoces. Las descargas se habilitan cuando todos los turnos
+                    tienen un código válido.</p>
+                <div id="pending-list"></div><button id="apply" class="small-button">Aplicar códigos</button>
+            </div>
+            <div class="card preview">
+                <div class="section-title">
+                    <h3>Detalle de cambios</h3><input id="search" type="search"
+                        placeholder="Buscar horario, código o agente" aria-label="Buscar cambios">
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hoja / celda</th>
+                                <th>Agente</th>
+                                <th>Valor original</th>
+                                <th>Código</th>
+                                <th>Regla aplicada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="changes"></tbody>
+                    </table>
+                </div>
+                <p id="preview-count" class="muted"></p>
+            </div>
+        </section>
+        <footer><span>PAX / Codificador de roles</span><span>Jean Franco Escurra Stuart</span></footer>
+    </main>
+    <script src="vendor/jszip.min.js"></script>
+    <script type="module" src="app.js"></script>
+    <script src="theme.js"></script>
+</body>
+
+</html>
