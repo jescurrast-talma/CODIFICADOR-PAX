@@ -272,7 +272,7 @@ element('apply').addEventListener('click', () => {
   for (const input of element('pending-list').querySelectorAll('input')) {
     const code = cleanCode(input.value);
     if (!code) continue;
-    if (!/^[A-Z0-9]{1,24}$/.test(code) || lookup(code).code!==code) {
+    if (!/^(?:[A-Z0-9]{1,24}|DLCG\/L)$/.test(code) || lookup(code).code!==code) {
       showMessage('Selecciona un código existente en el glosario PAX.', true);
       input.focus();
       return;
