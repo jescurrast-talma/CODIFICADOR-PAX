@@ -1,4 +1,4 @@
-
+/** Canonical comparison key for shifts and airline abbreviations. */
 export function normalize(value) {
   return String(value)
     .normalize('NFD')
@@ -17,7 +17,8 @@ export const specials = [
   ['FALTA', 'F'],
   ['DESCANSO', 'DESD'],
   ['DM', 'DDMS'],
-  ['D/M', 'DDMS']
+  ['D/M', 'DDMS'],
+  ['CUMPLEAÑOS','DESD'], ['FALTA INJUSTI','F'], ['LCGH','DLCG/L'], ['FALTO','F'], ['ON BOARDNG','CAPA']
 ];
 
 const AGENT_HEADER = /^(AGENTES?|APELLIDOS Y NOMBRES|NOMBRES Y APELLIDOS|COLABORADOR(?:ES)?|NOMBRES)$/;
@@ -37,7 +38,7 @@ function attribute(text, name) {
   return match ? decodeXml(match[1]) : '';
 }
 
-
+/** Read the standard OOXML elements used by Excel worksheets and relationships. */
 function xmlElements(xml, name) {
   const expression = new RegExp('<(?:\\w+:)?' + name + '(?=[\\s/>])([^>]*?)(?:/>|>([\\s\\S]*?)</(?:\\w+:)?' + name + '>)', 'g');
   return [...xml.matchAll(expression)].map(match => ({
@@ -54,7 +55,7 @@ function columnNumber(column) {
   return [...column].reduce((number, character) => number * 26 + character.charCodeAt(0) - 64, 0);
 }
 
-
+/** Load .xlsx values while retaining the original ZIP entries for lossless role export. */
 export async function openExcel(bytes) {
   const zip = await JSZip.loadAsync(bytes);
   const readEntry = async path => {
@@ -103,7 +104,7 @@ export function makeLookup(pairs) {
   for (const [value, code] of [...pairs, ...specials]) {
     const key = normalize(value);
     const cleanCode = String(code).trim().toUpperCase();
-    if (!key || !/^[A-Z0-9_-]+$/.test(cleanCode)) continue;
+    if (!key || !/^(?:[A-Z0-9_-]+|DLCG\/L)$/.test(cleanCode)) continue;
     if (!lookup.has(key)) lookup.set(key, new Set());
     lookup.get(key).add(cleanCode);
   }
@@ -119,7 +120,7 @@ export function readGlossary(book) {
       const code = row.find(cell => cell.column === 'B')?.value;
       if (!value || !code) continue;
       const isTime = /\d{1,2}:\d{2}/.test(value);
-      const isAlias = aliasSheet && normalize(value) !== 'ALIAS' && /^[A-Z0-9_-]+$/.test(String(code).trim());
+      const isAlias = aliasSheet && normalize(value) !== 'ALIAS' && /^(?:[A-Z0-9_-]+|DLCG\/L)$/.test(String(code).trim());
       if (!isTime && !isAlias) continue;
       if (value.includes('=')) value = value.split('=').slice(1).join('=').trim();
       pairs.push([value, code]);
@@ -129,7 +130,7 @@ export function readGlossary(book) {
   return pairs;
 }
 
-
+/** Resolve only the day columns in agent tables. Conflicting codes remain pending. */
 export function analyze(book, lookup, overrides = new Map()) {
   const knownCodes = new Set([...lookup.values()].flatMap(set => [...set]));
   const changes = [];
@@ -176,6 +177,7 @@ export function analyze(book, lookup, overrides = new Map()) {
   return {changes, pending, processed};
 }
 
+/** Replace values in worksheet XML and copy all other entries from the uploaded workbook. */
 export async function exportExcel(book, report, type = 'blob') {
   const zip = new JSZip();
   const changesBySheet = new Map();
@@ -193,7 +195,7 @@ export async function exportExcel(book, report, type = 'blob') {
       const address = attribute(attributes, 'r');
       const code = changes.get(address);
       if (!code) return whole;
-      if (!/^[A-Z0-9_-]+$/.test(code)) throw new Error('Código inválido.');
+      if (!/^(?:[A-Z0-9_-]+|DLCG\/L)$/.test(code)) throw new Error('Código inválido.');
       count++;
       const cleanAttributes = attributes.replace(/\s+t=["'][^"']*["']/, '');
       return '<c' + cleanAttributes + ' t="inlineStr"><is><t>' + code + '</t></is></c>';
