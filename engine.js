@@ -14,7 +14,7 @@ export function createResolver(pairs, profile, volantes = []) {
   const cleanPairs=pairs.map(([v,c])=>[v,cleanCode(c)]);
   const lookup=makeLookup(cleanPairs);
   const known=new Set([...cleanPairs.map(p=>p[1]),...specials.map(p=>p[1]),...volantes.map(v=>v.code)]);
-  
+  // Valid existing absence codes remain available even if no shift alias uses them.
   for(const c of ['DVAC','DLCG']) known.add(c);
   const aliases=new Map((profile.aliases||[]).map(([a,b])=>[aliasKey(a),b]));
   const byCode=new Map(cleanPairs.filter(([v])=>isTime(v)).map(([v,c])=>[c,timeKey(v)]));
@@ -35,7 +35,7 @@ export function createResolver(pairs, profile, volantes = []) {
       const target=aliases.get(alias),code=known.has(cleanCode(target))?cleanCode(target):exact(target);
       return code?{code,reason:'Leyenda '+profile.name}:{reason:'Horario de la leyenda sin equivalencia PAX'};
     }
-    
+    // Split shifts are considered ONLY for explicit pairs of PAX codes.
     if(/^[A-Z]+\d+[A-Z]*\/[A-Z]+\d+[A-Z]*$/.test(codeInput)) {
       const explicit=volantes.filter(v=>(v.aliases||[]).map(cleanCode).includes(codeInput));
       if(explicit.length===1)return {code:explicit[0].code,reason:'Equivalencia VOLANTE'};
@@ -63,9 +63,9 @@ export function readUpdatedGlossary(book) {
       const a=at('A'),b=at('B');
       if(!a||!b||cleanCode(b)==='CODIGO')continue;
       if(/VOLANTE/i.test(sheet.name)) {
-        if(!/^[A-Z0-9]+$/.test(cleanCode(b)))continue;
+        if(!/^(?:[A-Z0-9]+|DLCG\/L)$/.test(cleanCode(b)))continue;
         volantes.push({time:String(a).split('=').pop().trim(),code:cleanCode(b),aliases:[at('C'),at('D')].filter(Boolean)});
-      } else if(/^[A-Z0-9]+$/.test(cleanCode(b)))pairs.push([cleanName(a),cleanCode(b)]);
+      } else if(/^(?:[A-Z0-9]+|DLCG\/L)$/.test(cleanCode(b)))pairs.push([cleanName(a),cleanCode(b)]);
     }
   }
   if(!pairs.length)throw new Error('No se encontraron equivalencias en las columnas HORARIO y CODIGO.');
@@ -75,7 +75,8 @@ export function readUpdatedGlossary(book) {
 const excelEpoch=Date.UTC(1899,11,30);
 export function dateSerial(day,month,year){return Math.round((Date.UTC(year,month-1,day)-excelEpoch)/86400000);}
 function parseDay(value,month,year) {
-  const s=cleanName(value);let day,m=month,y=year;
+  // A weekday label supplies only the day; month/year come from the selector.
+  const s=cleanName(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/^(?:lunes|martes|miercoles|jueves|viernes|sabado|domingo)\s+(\d{1,2})$/i,'$1');let day,m=month,y=year;
   if(/^\d{1,2}$/.test(s))day=Number(s);
   else if(/^\d{5}(?:\.0+)?$/.test(s)) {const d=new Date(excelEpoch+Number(s)*86400000);day=d.getUTCDate();m=d.getUTCMonth()+1;y=d.getUTCFullYear();}
   else if(/^\d{4}-\d{2}-\d{2}/.test(s)){[y,m,day]=s.slice(0,10).split('-').map(Number);}
