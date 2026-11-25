@@ -1008,7 +1008,7 @@
     "CAPA"
   ],
   [
-    "TALLER",
+    "TALLER(PUEDE TENER CUALQUIER NOMBRE)",
     "CAPA"
   ],
   [
@@ -1030,5 +1030,21 @@
   [
     "ADMIN",
     "D728"
+  ],
+  [
+    "CUMPLEAÑOS",
+    "DESD"
+  ],
+  [
+    "FALTA INJUSTI",
+    "F"
+  ],
+  [
+    "LCGH",
+    "DLCG/L"
+  ],
+  [
+    "FALTO",
+    "F"
   ]
 ]
