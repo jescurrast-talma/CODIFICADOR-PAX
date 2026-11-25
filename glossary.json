@@ -1008,7 +1008,7 @@
     "CAPA"
   ],
   [
-    "TALLER(PUEDE TENER CUALQUIER NOMBRE)",
+    "TALLER",
     "CAPA"
   ],
   [
@@ -1046,5 +1046,9 @@
   [
     "FALTO",
     "F"
+  ],
+  [
+    "ON BOARDNG",
+    "CAPA"
   ]
 ]
